@@ -319,7 +319,7 @@ function csp_register_setting_menu_page() {
 	add_submenu_page(
         'csp-setting',
         'CSP Subscribers',
-        'Subscribers',
+        'Subscribers List',
         'manage_options',
         'csp-subscribers',
         'csp_subscribers_submenu' );
@@ -330,6 +330,16 @@ add_action( 'admin_menu', 'csp_register_setting_menu_page' );
 //Subscribers listing page 
 function csp_subscribers_submenu() {
 	
+	global $wpdb;
+	
+	$subscribersTable = $wpdb->prefix . 'csp_subscribers';
+	
+	$cspArySubscribers = $wpdb->get_results( 'SELECT * FROM '. $subscribersTable .' ORDER BY id DESC' );
+	
+	$mailChimpActivate = get_option('mail-chimp-activate');
+	
+	$disableFnameLname = get_option('disable-fname-lname');
+		
     include_once('csp-subscribers.php');
 	
 }
@@ -449,3 +459,12 @@ function csp_subscribers_install() {
 }
 
 register_activation_hook( __FILE__, 'csp_subscribers_install' );
+
+function csp_admin_add_subscriber(){
+	
+	echo 'hello';
+	die(0);
+	
+}
+
+add_action( 'wp_ajax_csp_admin_add_subscriber', 'csp_admin_add_subscriber' );
