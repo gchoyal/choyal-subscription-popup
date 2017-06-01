@@ -6,26 +6,25 @@
 	
 	<hr class="wp-header-end">
 
-	<form id="posts-filter" method="get">
-
+	<form id="subscriber-search-form" method="post">
+	
 		<p class="search-box">
 			<label class="screen-reader-text" for="post-search-input">Search Subscribers:</label>
 			<input type="search" id="post-search-input" name="s" value="">
 			<input type="submit" id="search-submit" class="button" value="Search Pages">
 		</p>
-
+	
+	</form>
+	
+	<form id="subscriber-bulk-delete-form" method="post">
+	
+		<input type="hidden" name="bulk-delete-mailchimp" id="bulk-delete-mailchimp"  value="no" >
+		
 		<div class="tablenav top">
 
 			<div class="alignleft actions bulkactions">
 				
-				<label for="bulk-action-selector-top" class="screen-reader-text">Select bulk action</label>
-				
-				<select name="action" id="bulk-action-selector-top">
-					<option value="-1">Bulk Actions</option>
-					<option value="trash">Delete</option>
-				</select>
-				
-				<input type="submit" id="doaction" class="button action" value="Apply">
+				<button class="button bulk-delete-subscribers" >Delete</button>
 				
 			</div>
 				
@@ -54,7 +53,7 @@
 					
 					<th scope="row" class="check-column">			
 					
-						<input id="cb-select-2" type="checkbox" name="post[]" value="2">
+						<input class="subscriber-chk" type="checkbox" name="subscriber[]" value="<?php echo $cspsubscriber->email; ?>">
 						
 					</th>
 					
@@ -62,7 +61,7 @@
 					
 						<span><?php echo $cspsubscriber->email; ?></span>
 
-						<div class="row-actions"> <span class="trash"><a href="#<?php echo $cspsubscriber->id; ?>" class="submitdelete" >Delete</a></span> </div>
+						<div class="row-actions"> <span class="trash"><a href="#<?php echo $cspsubscriber->id; ?>" sub-id="<?php echo $cspsubscriber->id; ?>" class="csp-delete-sub" >Delete</a></span> </div>
 
 					</td>
 			 
@@ -93,12 +92,7 @@
 
 			<div class="alignleft actions bulkactions">
 			
-				<select name="action2" id="bulk-action-selector-bottom">
-					<option value="-1">Bulk Actions</option>
-					<option value="trash">Delete</option>
-				</select>
-				
-				<input type="submit" id="doaction2" class="button action" value="Apply">
+				<button class="button bulk-delete-subscribers" >Delete</button>
 				
 			</div>
 			
@@ -161,10 +155,33 @@
     box-shadow: 0 0 5px grey;
 }
 
-.csp_btn img{ margin: -10px 5px; }
+.csp_btn img, .csp_btn img:hover{ 
+	margin: -10px 5px;
+    height: 30px;
+    width: 30px;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+    background: transparent; 
+}
 
 .csp_loader{ display: none; }
 
+.csp-popup-success-msg{
+	background: rgb(71, 167, 53);
+}
+
+.csp-popup-error-msg{
+
+    background: rgb(243, 51, 51);
+	
+}
+.csp_api_msg p{
+	
+	padding: 5px 10px;
+    color: white;
+	
+}
 /* Add Zoom Animation */
 .animate {
     -webkit-animation: animatezoom 0.3s;
@@ -194,23 +211,25 @@
 
 		<h1>Add New Subscriber</h1>
 		
+		<div class="csp_api_msg"></div>
+		
 		<table class="form-table">
 			<tbody>
 				<tr>
-					<th scope="row"><label for="email">Email</label></th>
-					<td><input name="email" type="email" id="email" value="" class="regular-text" required></td>
+					<th scope="row"><label for="csp_email">Email</label></th>
+					<td><input name="csp_email" type="email" id="csp_email" value="" class="regular-text" required></td>
 				</tr>
 				
 				<?php if( !$disableFnameLname || $disableFnameLname == 'no' ){ ?>
 				
 				<tr>
-					<th scope="row"><label for="fname">First Name</label></th>
-					<td><input name="fname" type="text" id="fname" value="" class="regular-text"></td>
+					<th scope="row"><label for="csp_fname">First Name</label></th>
+					<td><input name="csp_fname" type="text" id="csp_fname" value="" class="regular-text"></td>
 				</tr>
 				
 				<tr>
-					<th scope="row"><label for="lname">Last Name</label></th>
-					<td><input name="lname" type="text" id="lname" value="" class="regular-text"></td>
+					<th scope="row"><label for="csp_lname">Last Name</label></th>
+					<td><input name="csp_lname" type="text" id="csp_lname" value="" class="regular-text"></td>
 				</tr>
 				
 				<?php } ?>
@@ -220,11 +239,11 @@
 				<tr>
 				
 					<th scope="row">
-						<label for="mailchimp">Add to MailChimp List </label>
+						<label for="csp_mailchimp">Add to MailChimp List </label>
 					</th>
 					<td>
 					
-						<input name="mailchimp" type="checkbox" id="mailchimp" value="yes">
+						<input name="csp_mailchimp" type="checkbox" id="csp_mailchimp" value="yes">
 						<a href="https://mailchimp.com/" target="_blank" >
 							<img src="<?php echo CSP_ASSETS_PATH. 'img/freddie_wink.svg'; ?>" width="20" height="20" alt="MailChimp logo" class="freddie-logo" style="margin: 0 0 -6px 0;" >
 						</a>
@@ -238,6 +257,107 @@
 		</table>
 		
 		<p class="submit"><button type="submit" name="csp_submit" class="csp_btn" >Save <img class="csp_loader" src="<?php echo CSP_ASSETS_PATH.'/img/ripple.svg'; ?>" onerror="this.src='<?php echo CSP_ASSETS_PATH.'/img/ripple.gif'; ?>'"></button></p>
+		
+	</form>
+	
+</div>
+
+<!-- The Modal Delete Confirmation -->
+<div id="id02" class="modal">
+  
+	<span onclick="document.getElementById('id02').style.display='none'" class="close" title="Close Modal"></span>
+
+	<!-- Modal Content -->
+	<form class="modal-content animate" action="" method="post" id="csp-delete-sub-popup" >
+		
+		<span onclick="document.getElementById('id02').style.display='none'" class="closeCSP" title="Close Modal">&times;</span>
+
+		<h2>Are you sure want to delete ?</h2>
+		
+		<div class="csp_api_msg"></div>
+		
+		<table class="form-table">
+			<tbody>
+				<?php if( !$mailChimpActivate || $mailChimpActivate == 'yes' ){ //MailChimp Subscribe ?>
+				
+				<tr>
+				
+					<th scope="row">
+						<label for="csp_delete_removefrom_mailchimp">Remove from MailChimp List </label>
+					</th>
+					<td>
+					
+						<input name="csp_delete_removefrom_mailchimp" type="checkbox" id="csp_delete_removefrom_mailchimp" value="yes">
+						<a href="https://mailchimp.com/" target="_blank" >
+							<img src="<?php echo CSP_ASSETS_PATH. 'img/freddie_wink.svg'; ?>" width="20" height="20" alt="MailChimp logo" class="freddie-logo" style="margin: 0 0 -6px 0;" >
+						</a>
+						
+					</td>
+				</tr>
+				
+				<?php } ?>
+			</tbody>
+		</table>
+		
+		<input type="hidden" value="" id="csp-delete-subid-input" name="csp-delete-subid-input">
+		
+		<p class="submit"><button style="background:#d84242;" type="submit" name="csp_submit" class="csp_btn" >Delete <img class="csp_loader" src="<?php echo CSP_ASSETS_PATH.'/img/ripple.svg'; ?>" onerror="this.src='<?php echo CSP_ASSETS_PATH.'/img/ripple.gif'; ?>'"></button></p>
+		
+	</form>
+	
+</div>
+
+<!-- The Modal Bulk Delete Confirmation -->
+<div id="id03" class="modal">
+  
+	<span onclick="document.getElementById('id03').style.display='none'" class="close" title="Close Modal"></span>
+
+	<!-- Modal Content -->
+	<form class="modal-content animate" action="" method="post" id="csp-bulkdelete-sub-popup" >
+		
+		<span onclick="document.getElementById('id03').style.display='none'" class="closeCSP" title="Close Modal">&times;</span>
+
+		<h2>Are you sure want to delete ?</h2>
+		
+		<div class="csp_api_msg"></div>
+		
+		<table class="responsive table-bordered">
+			<thead>
+				<th><p>You have selected follwing subscriber's</p></th>
+			</thead>
+			<tbody id="confirm-subscribers-list">
+			  
+			</tbody>
+		</table>
+		
+		<table class="form-table">
+			<tbody>
+			
+				<?php if( !$mailChimpActivate || $mailChimpActivate == 'yes' ){ //MailChimp Subscribe ?>
+				
+				<tr>
+				
+					<th scope="row">
+						<label for="csp_delete_removefrom_mailchimp">Remove from MailChimp list </label>
+					</th>
+					<td>
+					
+						<input name="csp_bulkdelete_confirm_mailchimp" type="checkbox" id="csp_bulkdelete_confirm_mailchimp" value="yes">
+						
+						<a href="https://mailchimp.com/" target="_blank" >
+							<img src="<?php echo CSP_ASSETS_PATH. 'img/freddie_wink.svg'; ?>" width="20" height="20" alt="MailChimp logo" class="freddie-logo" style="margin: 0 0 -6px 0;" >
+						</a>
+						
+					</td>
+					
+				</tr>
+				
+				<?php } ?>
+				
+			</tbody>
+		</table>
+		
+		<p class="submit"><button style="background:#d84242;" type="submit" name="csp_submit" class="csp_btn" >Delete Selected<img class="csp_loader" src="<?php echo CSP_ASSETS_PATH.'/img/ripple.svg'; ?>" onerror="this.src='<?php echo CSP_ASSETS_PATH.'/img/ripple.gif'; ?>'"></button></p>
 		
 	</form>
 	
@@ -264,9 +384,11 @@ jQuery(document).ready(function(){
 		
 		jQuery('.csp_loader').show();
 		
+		var subscribeForm = jQuery('#csp-add-new-subscriber').serializeArray();
+		
 		var data = {
 			'action': 'csp_admin_add_subscriber',
-			'whatever': 1234
+			'data': subscribeForm
 		};
 
 		
@@ -275,15 +397,172 @@ jQuery(document).ready(function(){
 			type: "post",
 			url: csp_ajax_url,
 			data: data,
-			success: function(response){
+			success : function( response ) {
 				
-				console.log(response);
+				if(response.operation == 'success'){
+					
+					jQuery('#csp-add-new-subscriber').find("input[type=text], input[type=email]").val("");
+					jQuery('.csp_api_msg').html(response.msg);
+					location.reload(true);
+					
+				}else{
+					
+					jQuery('.csp_api_msg').html(response.msg);
+					
+				}
 				
 				jQuery('.csp_loader').hide();
 				
 			}
 			
 		});
+		
+		return false;
+		
+	});
+	
+	//delete subscriber model
+	
+	jQuery('.csp-delete-sub').click(function(){
+		
+		var subId = jQuery(this).attr('sub-id');
+		
+		jQuery('#csp-delete-subid-input').val( subId );
+		
+		jQuery('#id02').show();
+		
+		return false;
+		
+	});
+	
+	//delete subscriber popup form subumit
+
+	jQuery('#csp-delete-sub-popup').submit(function(){
+		
+		jQuery('.csp_loader').show();
+		
+		var subscriberDeleteForm = jQuery('#csp-delete-subid-input').val();
+		
+		if ( jQuery('#csp_delete_removefrom_mailchimp').is(':checked') ) {
+			
+			var csp_delete_removefrom_mailchimp = 'yes';
+		
+		}else{
+			
+			var csp_delete_removefrom_mailchimp = 'no';
+			
+		}
+		
+		var data = {
+			'action': 'csp_admin_delete_subscriber',
+			'data': { 'subscriberDeleteForm':subscriberDeleteForm, 'csp_delete_removefrom_mailchimp':csp_delete_removefrom_mailchimp }
+		};
+
+		
+		jQuery.ajax({
+			
+			type: "post",
+			url: csp_ajax_url,
+			data: data,
+			success : function( response ) {
+				
+				jQuery('#csp-delete-sub-popup').find("input[type=text], input[type=email]").val("");
+				jQuery('.csp_api_msg').html(response);
+				
+				jQuery('.csp_loader').hide();
+				
+				location.reload(true);
+				
+			}
+			
+		});
+		
+		return false;
+		
+	});
+	
+	jQuery('#subscriber-bulk-delete-form').submit(function(){
+		
+		jQuery('.csp_loader').show();
+		
+		var subscribeForm = jQuery('#subscriber-bulk-delete-form').serializeArray();
+		
+		var data = {
+			'action': 'csp_admin_bulk_delete_subscribers',
+			'data': subscribeForm
+		};
+
+		
+		jQuery.ajax({
+			
+			type: "post",
+			url: csp_ajax_url,
+			data: data,
+			success : function( response ) {
+				
+				
+						console.log(response);
+						return false;
+						
+						
+				if(response.operation == 'success'){
+					
+					jQuery('#csp-add-new-subscriber').find("input[type=text], input[type=email]").val("");
+					jQuery('.csp_api_msg').html(response.msg);
+					location.reload(true);
+					
+				}else{
+					
+					jQuery('.csp_api_msg').html(response.msg);
+					
+				}
+				
+				jQuery('.csp_loader').hide();
+				
+			}
+			
+		});
+		
+		return false;
+		
+	});
+	
+	jQuery('.bulk-delete-subscribers').click(function(){
+		
+		var values = jQuery('input:checkbox:checked.subscriber-chk').map(function () {
+		  return this.value;
+		}).get();
+
+		if( values.length == 0 ){
+			
+			return false;
+			
+		}
+		
+		jQuery('#id03').show();
+		
+		var subsListHtmlPopup = '';
+		
+		jQuery.each( values, function( index, value ){
+			subsListHtmlPopup += '<tr><td><li>'+value+'</li></td></tr>';
+		});
+		
+		jQuery('#confirm-subscribers-list').html(subsListHtmlPopup);
+		
+		return false;
+		
+	});
+	
+	//Bulk Delete Confirmation
+	jQuery('#csp-bulkdelete-sub-popup').submit(function(){
+		
+		if ( jQuery('#csp_bulkdelete_confirm_mailchimp').is(':checked') ) {
+		
+			jQuery('#bulk-delete-mailchimp').val('yes');
+		
+		}
+		
+		jQuery('#subscriber-bulk-delete-form').submit();
 		
 		return false;
 		

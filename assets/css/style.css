@@ -139,3 +139,16 @@
     background: rgb(243, 51, 51);
 	
 }
+
+.csp_brand_icon{
+	
+	text-align:center;
+	
+}
+
+.csp_brand_icon a{
+	
+	font-size: 13px;
+    font-family: monospace;
+	
+}

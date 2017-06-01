@@ -113,6 +113,12 @@ function csp_model_html(){
 						<button type="submit" name="csp_submit" class="csp_btn" >Subscribe Now <img class="csp_loader" src="<?php echo CSP_ASSETS_PATH.'/img/ripple.svg'; ?>" onerror="this.src='<?php echo CSP_ASSETS_PATH.'/img/ripple.gif'; ?>'"></button>
 					</div>
 					
+					<div class="csp_row csp_brand_icon" >
+						<a href="https://mailchimp.com/" target="_blank" >
+							<img src="<?php echo CSP_ASSETS_PATH. 'img/freddie_wink.svg'; ?>" width="20" height="20" alt="MailChimp logo" class="freddie-logo" style="margin: 0 0 -6px 0;" > mailchimp.com Support
+						</a>
+					</div>
+					
 				</form>
 	
 			</div>
@@ -460,11 +466,214 @@ function csp_subscribers_install() {
 
 register_activation_hook( __FILE__, 'csp_subscribers_install' );
 
+//Ajax function of admin subscriber add
 function csp_admin_add_subscriber(){
 	
-	echo 'hello';
+	global $wpdb;
+	
+	$subscribersTable = $wpdb->prefix . 'csp_subscribers';
+	
+	if( is_array($_POST['data']) ){
+		
+		//Get settings
+		$mailChimpActivate = get_option('mail-chimp-activate');
+		
+		$formData = $_POST['data'];
+
+		$email_key = csp_is_field( $formData, 'csp_email' );
+		$fname = '';
+		$lname = '';
+		
+		//Email Address
+		if( isset($formData[$email_key]['value']) && !filter_var($formData[$email_key]['value'], FILTER_VALIDATE_EMAIL) === false ){
+			
+			$fname_key = csp_is_field( $formData, 'csp_fname' );
+			$lname_key = csp_is_field( $formData, 'csp_lname' );
+			$mailchimp_key = csp_is_field( $formData, 'csp_mailchimp' );
+			
+			if( isset($fname_key) ){
+				$fname = $formData[$fname_key]['value'];
+			
+			}
+			
+			if( isset($lname_key) ){
+				
+				$lname = $formData[$lname_key]['value'];
+			
+			}
+			
+			if( isset($mailchimp_key) ){
+				
+				$mailchimp = $formData[$mailchimp_key]['value'];
+			
+			}
+			
+			$email = $formData[$email_key]['value'];
+			
+			$mailChimpEmailValidation = true;
+			
+			if( ( !$mailChimpActivate || $mailChimpActivate == 'yes') && ( isset($mailchimp) && $mailchimp == 'yes'  ) ){ //MailChimp Subscribe
+					
+				
+				$mailChimpSubData = csp_mailchimp_subscription( 'subscribed',  $email, $fname, $lname );
+				
+				if( $mailChimpSubData['code'] == 400 ){
+					
+					$mailChimpEmailValidation = false;
+					
+				}
+				
+				
+			}
+			
+			//Insert into DB 
+			$wpdb->get_results('SELECT * FROM '. $subscribersTable .' WHERE email="'. $email .'"');
+			
+			if( $mailChimpEmailValidation == true ){
+					
+				if( $wpdb->num_rows > 0 ) { 
+			
+					//$response['response']['code'] 
+					$subscriptionStatus = array( 'operation' => 'error', 'msg' => '<p class="csp-popup-error-msg" >Email address already exist in subscriber list.</p>' );
+					
+				} else {
+					
+					$wpdb->insert( $subscribersTable, 
+						array( 
+							'fname' => $fname, 
+							'lname' => $lname,
+							'email' => $email
+						), 
+						array( 
+							'%s', 
+							'%s',
+							'%s'
+						) 
+					);
+					
+					$subscriptionStatus = array( 'operation' => 'success', 'msg' => '<p class="csp-popup-success-msg" >Email address addded successfully to subscriber list.</p>'  );
+					
+				}
+			
+			}else{
+				
+				$subscriptionStatus = array( 'operation' => 'error', 'msg' => $mailChimpSubData['msg'] );
+				
+			}
+			
+			wp_send_json( $subscriptionStatus );
+			
+		}
+		
+	
+	}
+	
 	die(0);
 	
 }
 
 add_action( 'wp_ajax_csp_admin_add_subscriber', 'csp_admin_add_subscriber' );
+
+//Delete Subscriber
+function csp_admin_delete_subscriber(){
+	
+	global $wpdb;
+	
+	$subscribersTable = $wpdb->prefix . 'csp_subscribers';
+	
+	if( is_array($_POST['data']) ){
+		
+		$subscriberID = $_POST['data']['subscriberDeleteForm'];
+		$removeMailchimp = $_POST['data']['csp_delete_removefrom_mailchimp'];
+
+		if( isset($removeMailchimp) && $removeMailchimp == 'yes' ){
+			
+			//get email address using id
+			$subscriberMail = $wpdb->get_row('SELECT email FROM '. $subscribersTable .' WHERE id="'. $subscriberID .'"');
+			
+			if( $wpdb->num_rows > 0 ) { 
+			
+				$args = array(
+					'method' => 'DELETE',
+					'headers' => array(
+						'Authorization' => 'Basic ' . base64_encode( 'user:'. CSP_MAILCHIMP_API_KEY )
+					)
+				);
+				 
+				wp_remote_post( 'https://' . substr(CSP_MAILCHIMP_API_KEY,strpos(CSP_MAILCHIMP_API_KEY,'-')+1) . '.api.mailchimp.com/3.0/lists/' . CSP_MAILCHIMP_SELECTED_LIST_ID . '/members/' . md5(strtolower( $subscriberMail->email )), $args );
+				
+			}
+			
+		}
+		
+		
+		$wpdb->delete( $subscribersTable, array( 'id' => $subscriberID ), array( '%d' ) );
+		
+		echo '<p class="csp-popup-success-msg" >Subscriber deleted successfully.</p>';
+
+	}
+	
+	die(0);
+	
+}
+
+add_action( 'wp_ajax_csp_admin_delete_subscriber', 'csp_admin_delete_subscriber' );
+
+//Bulk delete subscriber
+function csp_admin_bulk_delete_subscribers(){
+	
+	global $wpdb;
+	
+	$subscribersTable = $wpdb->prefix . 'csp_subscribers';
+	
+	print_r($_POST['data']);
+	
+	if( is_array($_POST['data']) ){
+		
+		foreach( $_POST['data'] as $subscriber ){
+			
+			//echo $subscriber['value'];
+			
+		}
+		
+	}
+	exit;
+	
+	if( is_array($_POST['data']) ){
+		
+		$subscriberID = $_POST['data']['subscriberDeleteForm'];
+		$removeMailchimp = $_POST['data']['csp_delete_removefrom_mailchimp'];
+
+		if( isset($removeMailchimp) && $removeMailchimp == 'yes' ){
+			
+			//get email address using id
+			$subscriberMail = $wpdb->get_row('SELECT email FROM '. $subscribersTable .' WHERE id="'. $subscriberID .'"');
+			
+			if( $wpdb->num_rows > 0 ) { 
+			
+				$args = array(
+					'method' => 'DELETE',
+					'headers' => array(
+						'Authorization' => 'Basic ' . base64_encode( 'user:'. CSP_MAILCHIMP_API_KEY )
+					)
+				);
+				 
+				wp_remote_post( 'https://' . substr(CSP_MAILCHIMP_API_KEY,strpos(CSP_MAILCHIMP_API_KEY,'-')+1) . '.api.mailchimp.com/3.0/lists/' . CSP_MAILCHIMP_SELECTED_LIST_ID . '/members/' . md5(strtolower( $subscriberMail->email )), $args );
+				
+			}
+			
+		}
+		
+		
+		$wpdb->delete( $subscribersTable, array( 'id' => $subscriberID ), array( '%d' ) );
+		
+		echo '<p class="csp-popup-success-msg" >Subscriber deleted successfully.</p>';
+
+	}
+	
+	
+	die(0);
+	
+}
+
+add_action( 'wp_ajax_csp_admin_bulk_delete_subscribers', 'csp_admin_bulk_delete_subscribers' );
