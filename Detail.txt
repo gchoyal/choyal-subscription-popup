@@ -1,0 +1,3 @@
+Mail Chimp Integration guide - https://rudrastyh.com/wordpress/using-mailchimp-api.html
+
+Remaining  - WordPress Setting Part
