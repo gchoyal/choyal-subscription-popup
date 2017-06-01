@@ -5,6 +5,8 @@ Brief: Choyal Subscription Popup is plugin that can be use as newsletter subscri
 Tasks:
 Completed - 
 1. Subscription Popup 
-2. MailChimp API Inetgration 
-Remaining - Dashboard Subscriber's listing management.
+2. MailChimp API Inetgration, 
+3. Dashboard Subscriber's listing with delete function 
+
+Remaining - Dashboard Subscriber's listing - bulk delete, Pagination, Search form.
 
