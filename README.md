@@ -6,7 +6,7 @@ Tasks:
 Completed - 
 1. Subscription Popup 
 2. MailChimp API Inetgration, 
-3. Dashboard Subscriber's listing with delete function 
+3. Dashboard Subscriber's listing with delete function, bulk delete, Pagination
 
-Remaining - Dashboard Subscriber's listing - bulk delete, Pagination, Search form.
+Remaining - Dashboard Subscriber's listing - Search form.
 

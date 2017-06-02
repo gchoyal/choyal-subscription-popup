@@ -77,7 +77,15 @@
 				
 			</tbody>
 
-			<tfoot>
+			<tfoot id="csp-admin-subscriber-list-footer" total="<?php echo $cspTotalSubscribers; ?>" current-results="<?php echo count($cspArySubscribers); ?>" >
+				<tr id="csp-hori-loader" >
+					<td id="cb" class="manage-column column-cb check-column"></td>
+					<th scope="col" id="Email Address" class="manage-column column-title column-primary desc"></th>
+					<th scope="col" id="First Name" class="manage-column column-title column-primary desc">
+						<img class="csp-hori-loader-img" src="<?php echo CSP_ASSETS_PATH. 'img/horizontal-loader.gif'; ?>" >
+					</th>
+					<th scope="col" id="Last Name" class="manage-column column-title column-primary desc"></th>
+				</tr>
 				<tr>
 					<td id="cb" class="manage-column column-cb check-column"><label class="screen-reader-text" for="cb-select-all-1">Select All</label><input id="cb-select-all-1" type="checkbox"></td>
 					<th scope="col" id="Email Address" class="manage-column column-title column-primary desc"><span>Email</span></th>
@@ -181,6 +189,12 @@
 	padding: 5px 10px;
     color: white;
 	
+}
+#csp-hori-loader{
+	display:none;
+}
+.csp-hori-loader-img{
+	height: 14px;
 }
 /* Add Zoom Animation */
 .animate {
@@ -423,7 +437,7 @@ jQuery(document).ready(function(){
 	
 	//delete subscriber model
 	
-	jQuery('.csp-delete-sub').click(function(){
+	jQuery(document).on( 'click', '.csp-delete-sub', function(){
 		
 		var subId = jQuery(this).attr('sub-id');
 		
@@ -485,11 +499,15 @@ jQuery(document).ready(function(){
 		
 		jQuery('.csp_loader').show();
 		
-		var subscribeForm = jQuery('#subscriber-bulk-delete-form').serializeArray();
+		var emails = jQuery('input:checkbox:checked.subscriber-chk').map(function () {
+		  return this.value;
+		}).get();
+		
+		var bulkdeleteMailChimpCheck = jQuery('#bulk-delete-mailchimp').val();
 		
 		var data = {
 			'action': 'csp_admin_bulk_delete_subscribers',
-			'data': subscribeForm
+			'data': { 'bulk-delete-mailchimp': bulkdeleteMailChimpCheck, 'emails':emails }
 		};
 
 		
@@ -499,23 +517,10 @@ jQuery(document).ready(function(){
 			url: csp_ajax_url,
 			data: data,
 			success : function( response ) {
-				
-				
-						console.log(response);
-						return false;
-						
-						
-				if(response.operation == 'success'){
 					
-					jQuery('#csp-add-new-subscriber').find("input[type=text], input[type=email]").val("");
-					jQuery('.csp_api_msg').html(response.msg);
-					location.reload(true);
-					
-				}else{
-					
-					jQuery('.csp_api_msg').html(response.msg);
-					
-				}
+				jQuery('#csp-add-new-subscriber').find("input[type=text], input[type=email]").val("");
+				jQuery('.csp_api_msg').html(response);
+				location.reload(true);
 				
 				jQuery('.csp_loader').hide();
 				
@@ -567,6 +572,68 @@ jQuery(document).ready(function(){
 		return false;
 		
 	});
+	
+	//pagination 
+	var jaxCallCheck = false;
+	
+	jQuery(window).scroll(function(){
+		
+		var total = jQuery('#csp-admin-subscriber-list-footer').attr('total');
+		
+		if (jQuery(document).height() - 400 <= jQuery(window).scrollTop() + jQuery(window).height()) { //145
+			
+			var cresults = parseInt( jQuery('#csp-admin-subscriber-list-footer').attr('current-results') );
+			
+			if( cresults < total ){
+				
+				jQuery('#csp-hori-loader').show();
+				
+				//Call ajax 
+				
+				var data = {
+					'action': 'csp_subscribers_load_more',
+					'data': { 'cresults': cresults }
+				};
+				
+				if( jaxCallCheck == false ){
+					
+					jaxCallCheck = true;
+					
+					jQuery.ajax({
+						
+						type: "post",
+						url: csp_ajax_url,
+						data: data,
+						success : function( response ) {
+							
+							jQuery('#csp-admin-subscriber-list-footer').attr('current-results', (cresults+ parseInt( response.cresults )) );
+							
+							var subsListHtmlAppend = '';
+			
+							jQuery.each( response.sdata, function( index, value ){
+								subsListHtmlAppend += '<tr id="post-'+value.id+'" class="iedit author-self level-0 post-2 type-page status-publish hentry"><th scope="row" class="check-column"><input class="subscriber-chk" type="checkbox" name="subscriber[]" value="'+value.email+'"></th><td class="has-row-actions column-primary"><span>'+value.email+'</span><div class="row-actions"> <span class="trash"><a href="#'+value.id+'" sub-id="'+value.id+'" class="csp-delete-sub" >Delete</a></span> </div></td><td><span>'+value.fname+'</span></td><td><span>'+value.lname+'</span></td></tr>';
+							
+							});
+							
+							jQuery('#the-list').append(subsListHtmlAppend);
+							
+							jQuery('#csp-hori-loader').hide();
+							
+							jaxCallCheck = false;
+							
+						}
+						
+					});
+					
+				}
+				
+			}
+			
+		}
+		
+	});
+	//jQuery('#csp-admin-subscriber-list-footer')
+	
 	
 });
 </script>

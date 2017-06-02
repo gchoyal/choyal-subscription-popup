@@ -340,7 +340,9 @@ function csp_subscribers_submenu() {
 	
 	$subscribersTable = $wpdb->prefix . 'csp_subscribers';
 	
-	$cspArySubscribers = $wpdb->get_results( 'SELECT * FROM '. $subscribersTable .' ORDER BY id DESC' );
+	$cspTotalSubscribers = $wpdb->get_var( 'SELECT COUNT(*) FROM '. $subscribersTable );
+	
+	$cspArySubscribers = $wpdb->get_results( 'SELECT * FROM '. $subscribersTable .' ORDER BY id DESC LIMIT 10' );
 	
 	$mailChimpActivate = get_option('mail-chimp-activate');
 	
@@ -349,6 +351,34 @@ function csp_subscribers_submenu() {
     include_once('csp-subscribers.php');
 	
 }
+
+//subscribers listing Ajax call 
+function csp_subscribers_load_more(){
+	
+	global $wpdb;
+	
+	$subscribersTable = $wpdb->prefix . 'csp_subscribers';
+	
+	if( is_array( $_POST['data'] ) ){
+		
+		$offset = $_POST['data']['cresults'];
+		
+		$cspArySubscribers = $wpdb->get_results( 'SELECT * FROM '. $subscribersTable .' ORDER BY id DESC LIMIT '. $offset .',10' );
+		
+		$aryData = array(
+					'cresults' => count($cspArySubscribers),
+					'sdata' => $cspArySubscribers
+				);
+				
+		wp_send_json( $aryData );		
+		
+	}
+	
+	die(0);
+	
+}
+
+add_action( 'wp_ajax_csp_subscribers_load_more', 'csp_subscribers_load_more' );
 
 function csp_settings(){
 	
@@ -626,48 +656,45 @@ function csp_admin_bulk_delete_subscribers(){
 	
 	$subscribersTable = $wpdb->prefix . 'csp_subscribers';
 	
-	print_r($_POST['data']);
-	
 	if( is_array($_POST['data']) ){
 		
-		foreach( $_POST['data'] as $subscriber ){
-			
-			//echo $subscriber['value'];
-			
-		}
-		
-	}
-	exit;
-	
-	if( is_array($_POST['data']) ){
-		
-		$subscriberID = $_POST['data']['subscriberDeleteForm'];
-		$removeMailchimp = $_POST['data']['csp_delete_removefrom_mailchimp'];
+		$aryEmails = $_POST['data']['emails'];
+		$removeMailchimp = $_POST['data']['bulk-delete-mailchimp'];
 
 		if( isset($removeMailchimp) && $removeMailchimp == 'yes' ){
 			
-			//get email address using id
-			$subscriberMail = $wpdb->get_row('SELECT email FROM '. $subscribersTable .' WHERE id="'. $subscriberID .'"');
-			
-			if( $wpdb->num_rows > 0 ) { 
-			
-				$args = array(
-					'method' => 'DELETE',
-					'headers' => array(
-						'Authorization' => 'Basic ' . base64_encode( 'user:'. CSP_MAILCHIMP_API_KEY )
-					)
-				);
-				 
-				wp_remote_post( 'https://' . substr(CSP_MAILCHIMP_API_KEY,strpos(CSP_MAILCHIMP_API_KEY,'-')+1) . '.api.mailchimp.com/3.0/lists/' . CSP_MAILCHIMP_SELECTED_LIST_ID . '/members/' . md5(strtolower( $subscriberMail->email )), $args );
+			if( is_array($aryEmails) ){
+					
+				foreach( $aryEmails as $emailToDelete ){
+					
+					$args = array(
+						'method' => 'DELETE',
+						'headers' => array(
+							'Authorization' => 'Basic ' . base64_encode( 'user:'. CSP_MAILCHIMP_API_KEY )
+						)
+					);
+					 
+					wp_remote_post( 'https://' . substr(CSP_MAILCHIMP_API_KEY,strpos(CSP_MAILCHIMP_API_KEY,'-')+1) . '.api.mailchimp.com/3.0/lists/' . CSP_MAILCHIMP_SELECTED_LIST_ID . '/members/' . md5(strtolower( $emailToDelete )), $args );
+					
+				}
 				
 			}
 			
 		}
 		
+		$aryEmailN = array();
 		
-		$wpdb->delete( $subscribersTable, array( 'id' => $subscriberID ), array( '%d' ) );
+		foreach( $aryEmails as $sEmail ){
+			
+			$aryEmailN[] = "'". $sEmail ."'";
+			
+		}
 		
-		echo '<p class="csp-popup-success-msg" >Subscriber deleted successfully.</p>';
+		$aryEmails = implode( ',', $aryEmailN );
+		
+		$wpdb->query( "DELETE FROM ". $subscribersTable ." WHERE email IN(".$aryEmails.")" );
+
+		echo '<p class="csp-popup-success-msg" >Subscribers deleted successfully.</p>';
 
 	}
 	
