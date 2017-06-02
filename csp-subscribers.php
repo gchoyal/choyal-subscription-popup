@@ -7,7 +7,9 @@
 	<hr class="wp-header-end">
 
 	<form id="subscriber-search-form" method="post">
-	
+		
+		<img style="height: 20px;display:none;" id="csp-search-loader" src="<?php echo CSP_ASSETS_PATH.'/img/search-loader.gif'; ?>" >
+			
 		<p class="search-box">
 			<label class="screen-reader-text" for="post-search-input">Search Subscribers:</label>
 			<input type="search" id="post-search-input" name="s" value="">
@@ -632,7 +634,40 @@ jQuery(document).ready(function(){
 		}
 		
 	});
-	//jQuery('#csp-admin-subscriber-list-footer')
+	
+	
+	//search 
+	jQuery('#subscriber-search-form').submit(function(){
+		
+		jQuery('#csp-search-loader').show();
+		
+		var searchFormData = jQuery('#subscriber-search-form').serializeArray();
+		
+		//Call ajax 
+		
+		var data = {
+			'action': 'csp_search_subscribers',
+			'data': searchFormData
+		};
+		
+		jQuery.ajax({
+						
+			type: "post",
+			url: csp_ajax_url,
+			data: data,
+			success : function( response ) {
+				
+				jQuery('#the-list').html(response);
+				
+				jQuery('#csp-search-loader').hide();
+				
+			}
+			
+		});
+		
+		return false;
+		
+	});
 	
 	
 });

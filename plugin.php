@@ -704,3 +704,16 @@ function csp_admin_bulk_delete_subscribers(){
 }
 
 add_action( 'wp_ajax_csp_admin_bulk_delete_subscribers', 'csp_admin_bulk_delete_subscribers' );
+
+//Search subscriber ajax
+function csp_search_subscribers(){
+	
+	$searchTerm = $_POST['data'][0]['value'];
+	
+	echo $searchTerm;
+	
+	die(0);
+	
+}
+
+add_action( 'wp_ajax_csp_search_subscribers', 'csp_search_subscribers' );
