@@ -2,7 +2,7 @@
 /**
 Plugin Name: Choyal Subscription Popup
 Plugin URI: https://wordpress.org/plugins/choyal-subscription-popup/
-Description: Choyal Subscription Popup is plugin that can be use as newsletter subscription and support mailchimp. Popup is fully customizable in term of design and structure, many inbuilt animation available for subscription model. You can change color, text and background image of model.
+Description: Choyal Subscription Popup is plugin that can be use as newsletter subscription and support mailchimp. Show/Hide popup and enable/disable mailchimp from plugin setting option. Subscriber data will be store in wordpress database. 
 Author: Girdhari choyal
 Version: 1.0
 Author URI: https://about.me/gchoyal
