@@ -14,6 +14,7 @@
 			<label class="screen-reader-text" for="post-search-input">Search Subscribers:</label>
 			<input type="search" id="post-search-input" name="s" value="">
 			<input type="submit" id="search-submit" class="button" value="Search Pages">
+			<a href="#" id="resetSearchForm" >Reset Search</a>
 		</p>
 	
 	</form>
@@ -667,6 +668,11 @@ jQuery(document).ready(function(){
 		
 		return false;
 		
+	});
+	
+	jQuery('#resetSearchForm').click(function(){
+		location.reload(true);
+		return false;
 	});
 	
 	

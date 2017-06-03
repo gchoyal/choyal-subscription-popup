@@ -710,7 +710,47 @@ function csp_search_subscribers(){
 	
 	$searchTerm = $_POST['data'][0]['value'];
 	
-	echo $searchTerm;
+	global $wpdb;
+	
+	$subscribersTable = $wpdb->prefix . 'csp_subscribers';
+	
+	$subscriberMail = $wpdb->get_results('SELECT * FROM '. $subscribersTable .' WHERE (email LIKE "%'.$searchTerm. '%" OR fname LIKE "%'.$searchTerm.'%" OR lname LIKE "%'.$searchTerm.'%")' );
+			
+	if( $wpdb->num_rows > 0 ) { 
+	
+		foreach ( $subscriberMail as $cspsubscriber ) { ?>
+			
+			<tr id="post-2" class="iedit author-self level-0 post-2 type-page status-publish hentry">
+				
+				<th scope="row" class="check-column">			
+				
+					<input class="subscriber-chk" type="checkbox" name="subscriber[]" value="<?php echo $cspsubscriber->email; ?>">
+					
+				</th>
+				
+				<td class="has-row-actions column-primary">
+				
+					<span><?php echo $cspsubscriber->email; ?></span>
+
+					<div class="row-actions"> <span class="trash"><a href="#<?php echo $cspsubscriber->id; ?>" sub-id="<?php echo $cspsubscriber->id; ?>" class="csp-delete-sub" >Delete</a></span> </div>
+
+				</td>
+		 
+				<td><span><?php echo $cspsubscriber->fname; ?></span></td>
+				
+				<td>		
+					<span><?php echo $cspsubscriber->lname; ?></span>
+				</td>
+				
+			</tr>
+		
+			<?php }
+	
+	}else{
+		
+		echo '<p>No result found for term "'. $searchTerm .'".</p>';
+		
+	}
 	
 	die(0);
 	
